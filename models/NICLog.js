@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
-const ntaLogSchema = new mongoose.Schema(
+const nicLogSchema = new mongoose.Schema(
   {
-    bookingId: { type: String, required: true },
+    bookingId: { type: String, required: true, unique: true },
     vehicle: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Vehicle",
@@ -21,5 +21,5 @@ const ntaLogSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const NTALog = mongoose.model("NTALog", ntaLogSchema);
-export default NTALog;
+const NICLog = mongoose.model("NICLog", nicLogSchema); // ✅ Fix schema name here
+export default NICLog;

@@ -1,3 +1,7 @@
+import mongoose from "mongoose";
+
+
+
 const centerSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },

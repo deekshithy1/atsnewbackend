@@ -9,8 +9,8 @@ import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import atsCenterRoutes from './routes/atsCenterRoutes.js';
 import vehicleRoutes from './routes/vehicleRoutes.js';
-import testInstanceRoutes from './routes/testInstanceRoutes.js';
-import ntaRoutes from './routes/ntaRoutes.js';
+import testInstanceRoutes from './routes/testRoutes.js';
+import ntaRoutes from './routes/nicRoutes.js';
 
 // Middleware
 import { notFound, errorHandler } from './middlewares/errorMiddleware.js';

@@ -1,3 +1,6 @@
+import mongoose from "mongoose";
+
+
 const vehicleSchema = new mongoose.Schema(
   {
     bookingId: { type: String, required: true, unique: true },

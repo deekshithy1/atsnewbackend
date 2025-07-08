@@ -4,6 +4,8 @@ import {
   submitTestResult,
   getTestStatusByBookingId,
   getTestInstancesByCenter,
+  markTestAsComplete
+  
 } from "../controllers/testController.js";
 
 import { protect, authorize } from "../middlewares/authMiddleware.js";

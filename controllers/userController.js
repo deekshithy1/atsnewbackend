@@ -1,11 +1,25 @@
 import asyncHandler from 'express-async-handler';
 import User from '../models/User.js';
+import ATSCenter from '../models/ATSCenter.js';
 
 // @desc    Create ATS Admin (only by Super Admin)
 // @route   POST /api/users/ats-admin
 // @access  Private (SUPER_ADMIN only)
+// controllers/userController.js
 export const createATSAdmin = asyncHandler(async (req, res) => {
-  const { name, email, password, atsCenter } = req.body;
+  const { name, email, password, atsCenterCode } = req.body;
+
+  if (!atsCenterCode) {
+    res.status(400);
+    throw new Error('Center code is required');
+  }
+
+  const center = await ATSCenter.findOne({ code: atsCenterCode });
+
+  if (!center) {
+    res.status(404);
+    throw new Error('ATS Center not found');
+  }
 
   const userExists = await User.findOne({ email });
   if (userExists) {
@@ -18,7 +32,7 @@ export const createATSAdmin = asyncHandler(async (req, res) => {
     email,
     password,
     role: 'ATS_ADMIN',
-    atsCenter,
+    atsCenter: center._id,
   });
 
   res.status(201).json({
@@ -26,9 +40,10 @@ export const createATSAdmin = asyncHandler(async (req, res) => {
     name: newUser.name,
     email: newUser.email,
     role: newUser.role,
-    atsCenter: newUser.atsCenter,
+    atsCenter: center.code,
   });
 });
+
 
 // @desc    Create Technician (only by ATS Admin)
 // @route   POST /api/users/technician
@@ -63,9 +78,10 @@ export const createTechnician = asyncHandler(async (req, res) => {
 // @route   GET /api/users/technicians
 // @access  Private (ATS_ADMIN only)
 export const getAllTechnicians = asyncHandler(async (req, res) => {
+  console.log('Fetching technicians for center:', req.user.center);
   const technicians = await User.find({
     role: 'TECHNICIAN',
-    center: req.user.center
+    atsCenter: req.user.center
   }).select('-password');
 
   res.json(technicians);

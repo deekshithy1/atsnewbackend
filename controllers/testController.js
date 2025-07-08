@@ -1,18 +1,13 @@
 import asyncHandler from "express-async-handler";
-import Vehicle from "../models/Vehicle.js";
 import TestInstance from "../models/TestInstance.js";
+import Vehicle from "../models/Vehicle.js";
+import User from "../models/User.js";
 
-
-// @desc    Start a test instance (create record)
-// @route   POST /api/test/start
-// @access  Private (TECHNICIAN)
+// @desc Start test instance
+// @route POST /api/test/start
+// @access Technician
 export const startTestInstance = asyncHandler(async (req, res) => {
-  const { bookingId, testType } = req.body;
-
-  if (!bookingId || !testType) {
-    res.status(400);
-    throw new Error("Booking ID and testType are required");
-  }
+  const { bookingId } = req.body;
 
   const vehicle = await Vehicle.findOne({ bookingId });
 
@@ -21,29 +16,32 @@ export const startTestInstance = asyncHandler(async (req, res) => {
     throw new Error("Vehicle not found");
   }
 
-  let testInstance = await TestInstance.findOne({ bookingId });
-
-  if (!testInstance) {
-    testInstance = await TestInstance.create({
-      bookingId,
-      atsCenter: vehicle.atsCenter,
-      tests: [],
-    });
+  const existing = await TestInstance.findOne({ bookingId });
+  if (existing) {
+    res.status(400);
+    throw new Error("Test instance already exists");
   }
 
-  res.status(201).json({ message: "Test instance ready", testInstance });
+  const testInstance = await TestInstance.create({
+    bookingId,
+    vehicle: vehicle._id,
+    status: "IN_PROGRESS",
+    submittedBy: req.user._id,
+  });
+
+  vehicle.status = "IN_PROGRESS";
+  await vehicle.save();
+
+  res.status(201).json(testInstance);
 });
 
-// @desc    Submit a test result (visual or functional)
-// @route   POST /api/test/submit
-// @access  Private (TECHNICIAN)
-export const submitTestResult = asyncHandler(async (req, res) => {
-  const { bookingId, testType, result, photos } = req.body;
 
-  if (!bookingId || !testType || !result) {
-    res.status(400);
-    throw new Error("Missing test submission fields");
-  }
+
+// @desc Submit test result (visual or functional)
+// @route POST /api/test/submit
+// @access Technician
+export const submitTestResult = asyncHandler(async (req, res) => {
+  const { bookingId, visualTests, functionalTests } = req.body;
 
   const testInstance = await TestInstance.findOne({ bookingId });
 
@@ -52,34 +50,64 @@ export const submitTestResult = asyncHandler(async (req, res) => {
     throw new Error("Test instance not found");
   }
 
-  const existingIndex = testInstance.tests.findIndex(
-    (t) => t.testType === testType
-  );
-
-  if (existingIndex !== -1) {
-    testInstance.tests[existingIndex] = { testType, result, photos };
-  } else {
-    testInstance.tests.push({ testType, result, photos });
+  if (visualTests) {
+    testInstance.visualTests = { ...testInstance.visualTests, ...visualTests };
   }
 
-  // If all expected tests are complete, mark vehicle accordingly
-  const vehicle = await Vehicle.findOne({ bookingId });
-
-  const totalTestsDone = testInstance.tests.length;
-  const expectedTests = 2; // visual + functional (can be made dynamic later)
-
-  if (totalTestsDone >= expectedTests) {
-    vehicle.status = "COMPLETED";
-    vehicle.laneExitTime = new Date();
-    await vehicle.save();
-  } else {
-    vehicle.status = "IN_PROGRESS";
-    await vehicle.save();
+  if (functionalTests) {
+    testInstance.functionalTests = {
+      ...testInstance.functionalTests,
+      ...functionalTests,
+    };
   }
 
   await testInstance.save();
 
-  res.json({ message: "Test data submitted successfully" });
+  res
+    .status(200)
+    .json({ message: "Test result updated", status: testInstance.status });
+});
+
+// @desc Get test status by bookingId
+// @route GET /api/test/:bookingId/status
+// @access Private
+export const getTestStatusByBookingId = asyncHandler(async (req, res) => {
+  const { bookingId } = req.params;
+
+  const testInstance = await TestInstance.findOne({ bookingId }).populate(
+    "submittedBy",
+    "name role"
+  );
+
+  if (!testInstance) {
+    res.status(404);
+    throw new Error("Test instance not found");
+  }
+
+  res.json({
+    bookingId: testInstance.bookingId,
+    status: testInstance.status,
+    visualTests: testInstance.visualTests || {},
+    functionalTests: testInstance.functionalTests || {},
+    submittedBy: testInstance.submittedBy || null,
+  });
+});
+
+// @desc Get all test instances by technician's center
+// @route GET /api/test/center/all
+// @access ATS_ADMIN
+export const getTestInstancesByCenter = asyncHandler(async (req, res) => {
+  const atsCenterId = req.user.atsCenter;
+
+  const vehicles = await Vehicle.find({ atsCenter: atsCenterId }).select("_id");
+
+  const testInstances = await TestInstance.find({
+    vehicle: { $in: vehicles.map((v) => v._id) },
+  })
+    .populate("vehicle", "regnNo bookingId status")
+    .populate("submittedBy", "name role");
+
+  res.json(testInstances);
 });
 
 
@@ -116,36 +144,4 @@ export const markTestAsComplete = asyncHandler(async (req, res) => {
   }
 
   res.json({ message: 'Test marked as completed successfully.' });
-});
-
-
-
-
-// @desc    Get test progress/status for a vehicle
-// @route   GET /api/test/:bookingId/status
-// @access  Private
-export const getTestStatusByBookingId = asyncHandler(async (req, res) => {
-  const { bookingId } = req.params;
-
-  const testInstance = await TestInstance.findOne({ bookingId });
-
-  if (!testInstance) {
-    res.status(404);
-    throw new Error("No tests found for this booking");
-  }
-
-  res.json(testInstance);
-});
-
-// @desc    Get all test instances for ATS Admin’s center
-// @route   GET /api/test/center/all
-// @access  Private (ATS_ADMIN)
-export const getTestInstancesByCenter = asyncHandler(async (req, res) => {
-  const centerId = req.user.atsCenter;
-
-  const testInstances = await TestInstance.find({
-    atsCenter: centerId,
-  }).populate("atsCenter");
-
-  res.json(testInstances);
 });

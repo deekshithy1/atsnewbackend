@@ -5,7 +5,7 @@ import asyncHandler from 'express-async-handler';
 // @route   POST /api/centers
 // @access  Private (SUPER_ADMIN only)
 export const createCenter = asyncHandler(async (req, res) => {
-  const { name, code, state, region, latitude, longitude } = req.body;
+  const { name, code, latitude, longitude } = req.body;
 
   const exists = await ATSCenter.findOne({ code });
   if (exists) {
@@ -16,8 +16,6 @@ export const createCenter = asyncHandler(async (req, res) => {
   const center = await ATSCenter.create({
     name,
     code,
-    state,
-    region,
     latitude,
     longitude
   });

@@ -53,12 +53,13 @@ export const sendToNIC = asyncHandler(async (req, res) => {
   // For now, we will simulate the API call and response
   // Simulated POST request to NIC (replace with axios.post(...) for real)
   const fakeNICResponse = {
-    status: 'SUCCESS',
+    status: 'SENT',
     message: 'Data received by NIC',
   };
 
   await NICLog.create({
     bookingId,
+    vehicle: vehicle._id,
     status: fakeNICResponse.status,
     response: fakeNICResponse,
   });

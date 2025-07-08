@@ -4,6 +4,7 @@ import User from "../models/User.js";
 
 export const protect = asyncHandler(async (req, res, next) => {
   let token;
+  console.log("Protect middleware called");
 
   if (
     req.headers.authorization &&
@@ -36,6 +37,7 @@ export const protect = asyncHandler(async (req, res, next) => {
 // Role-based authorization
 export const authorize = (...roles) => {
   return (req, res, next) => {
+    console.log("Authorize middleware called with roles:", roles);
     if (!roles.includes(req.user.role)) {
       res.status(403);
       throw new Error("User role not authorized");

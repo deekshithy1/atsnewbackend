@@ -39,11 +39,11 @@ export const getVehiclesByCenterToday = asyncHandler(async (req, res) => {
   endOfDay.setHours(23, 59, 59, 999);
 
   const vehicles = await Vehicle.find({
-    atsCenter: req.user.atsCenter,
-    createdAt: {
-      $gte: startOfDay,
-      $lte: endOfDay,
-    },
+    atsCenter: req.user.atsCenter
+    // createdAt: {
+    //   $gte: startOfDay,
+    //   $lte: endOfDay,
+    // },
   });
 
   res.json(vehicles);

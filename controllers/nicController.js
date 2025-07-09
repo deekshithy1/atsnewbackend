@@ -1,28 +1,52 @@
 // controllers/nicController.js
-import asyncHandler from 'express-async-handler';
-import Vehicle from '../models/Vehicle.js';
-import TestInstance from '../models/TestInstance.js';
-import NICLog from '../models/NICLog.js';
+import asyncHandler from "express-async-handler";
+import Vehicle from "../models/Vehicle.js";
+import TestInstance from "../models/TestInstance.js";
+import NICLog from "../models/NICLog.js";
 
-// @desc    Get all completed vehicles ready to be sent to NIC
-// @route   GET /api/nic/ready
-// @access  ATS_ADMIN
+
+
 export const getVehiclesReadyForApproval = asyncHandler(async (req, res) => {
+  // Step 1: Get completed vehicles from this ATS center
   const vehicles = await Vehicle.find({
     atsCenter: req.user.atsCenter,
-    status: 'COMPLETED',
+    status: "COMPLETED",
   });
 
-  const approvedLogs = await NICLog.find({ status: 'SENT' }).select('bookingId');
-  const sentBookingIds = approvedLogs.map(log => log.bookingId);
+  // Step 2: Get already sent bookingIds
+  const approvedLogs = await NICLog.find({ status: "SENT" }).select(
+    "bookingId"
+  );
+  const sentBookingIds = approvedLogs.map((log) => log.bookingId);
 
-  const pendingVehicles = vehicles.filter(v => !sentBookingIds.includes(v.bookingId));
+  // Step 3: Filter out vehicles already sent
+  const unsentVehicles = vehicles.filter(
+    (v) => !sentBookingIds.includes(v.bookingId)
+  );
 
-  res.json(pendingVehicles);
+  const bookingIds = unsentVehicles.map((v) => v.bookingId);
+
+  // Step 4: Fetch TestInstances by bookingIds
+  const testInstances = await TestInstance.find({
+    bookingId: { $in: bookingIds },
+  }).populate("submittedBy", "name email");
+
+  // Step 5: Map test instances to bookingId
+  const testMap = {};
+  testInstances.forEach((test) => {
+    if (!testMap[test.bookingId]) testMap[test.bookingId] = [];
+    testMap[test.bookingId].push(test);
+  });
+
+  // Step 6: Attach testInstances to vehicles
+  const response = unsentVehicles.map((vehicle) => {
+    const vObj = vehicle.toObject(); // convert Mongoose doc to plain JS object
+    vObj.testInstances = testMap[vehicle.bookingId] || [];
+    return vObj;
+  });
+
+  res.json(response);
 });
-
-
-
 
 // @desc    Send approved vehicle data to NIC
 // @route   POST /api/nic/send
@@ -30,12 +54,12 @@ export const getVehiclesReadyForApproval = asyncHandler(async (req, res) => {
 export const sendToNIC = asyncHandler(async (req, res) => {
   const { bookingId } = req.body;
 
-  const vehicle = await Vehicle.findOne({ bookingId }).populate('atsCenter');
+  const vehicle = await Vehicle.findOne({ bookingId }).populate("atsCenter");
   const test = await TestInstance.findOne({ bookingId });
 
   if (!vehicle || !test) {
     res.status(404);
-    throw new Error('Vehicle or test instance not found');
+    throw new Error("Vehicle or test instance not found");
   }
 
   const payload = {
@@ -48,13 +72,13 @@ export const sendToNIC = asyncHandler(async (req, res) => {
     functionalTests: test.functionalTests,
     timestamp: new Date().toISOString(),
   };
-  
+
   // TODO: the api call to NIC should be implemented here
   // For now, we will simulate the API call and response
   // Simulated POST request to NIC (replace with axios.post(...) for real)
   const fakeNICResponse = {
-    status: 'SENT',
-    message: 'Data received by NIC',
+    status: "SENT",
+    message: "Data received by NIC",
   };
 
   await NICLog.create({
@@ -65,13 +89,14 @@ export const sendToNIC = asyncHandler(async (req, res) => {
   });
 
   // Update vehicle status to APPROVED
-  vehicle.status = 'APPROVED';
+  vehicle.status = "APPROVED";
   await vehicle.save();
 
-  res.json({ message: 'Data sent to NIC successfully', response: fakeNICResponse });
+  res.json({
+    message: "Data sent to NIC successfully",
+    response: fakeNICResponse,
+  });
 });
-
-
 
 // @desc    Get NIC log for a vehicle
 // @route   GET /api/nic/log/:bookingId
@@ -83,7 +108,7 @@ export const getNICLogStatus = asyncHandler(async (req, res) => {
 
   if (!log) {
     res.status(404);
-    throw new Error('No NIC log found for this booking ID');
+    throw new Error("No NIC log found for this booking ID");
   }
 
   res.json(log);

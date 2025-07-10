@@ -9,6 +9,8 @@ const nicLogSchema = new mongoose.Schema(
       required: true,
     },
     requestPayload: Object,
+    certificateStatus:String,
+    certificateType:String,
     encryptedChunks: [String],
     response: Object,
     status: {
@@ -17,6 +19,9 @@ const nicLogSchema = new mongoose.Schema(
       default: "PENDING",
     },
     sentAt: Date,
+    validFrom:{type:Date},
+    validTo:{type:Date},
+  
   },
   { timestamps: true }
 );

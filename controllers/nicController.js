@@ -53,7 +53,7 @@ export const getVehiclesReadyForApproval = asyncHandler(async (req, res) => {
 // @access  ATS_ADMIN
 export const sendToNIC = asyncHandler(async (req, res) => {
   const { bookingId } = req.body;
-
+ 
   const vehicle = await Vehicle.findOne({ bookingId }).populate("atsCenter");
   const test = await TestInstance.findOne({ bookingId });
 
@@ -68,9 +68,8 @@ export const sendToNIC = asyncHandler(async (req, res) => {
     engineNumber: vehicle.engineNo,
     chassisNumber: vehicle.chassisNo,
     centerCode: vehicle.atsCenter.code,
-    visualTests: test.visualTests,
-    functionalTests: test.functionalTests,
     timestamp: new Date().toISOString(),
+    
   };
 
   // TODO: the api call to NIC should be implemented here
@@ -86,6 +85,9 @@ export const sendToNIC = asyncHandler(async (req, res) => {
     vehicle: vehicle._id,
     status: fakeNICResponse.status,
     response: fakeNICResponse,
+    certificateStatus:req.body.certificateStatus,
+    certificateType:req.body.certificateType,
+  
   });
 
   // Update vehicle status to APPROVED
@@ -113,3 +115,11 @@ export const getNICLogStatus = asyncHandler(async (req, res) => {
 
   res.json(log);
 });
+export const getAllVehicles= asyncHandler(async(req,res)=>{
+         const vehciles=await  NICLog.find();
+         if(!vehciles){
+          res.status(404);
+          throw new Error("No vehcles")
+         }
+         res.json(vehciles);
+})

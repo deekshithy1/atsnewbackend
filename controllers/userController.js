@@ -78,10 +78,19 @@ export const createTechnician = asyncHandler(async (req, res) => {
 // @route   GET /api/users/technicians
 // @access  Private (ATS_ADMIN only)
 export const getAllTechnicians = asyncHandler(async (req, res) => {
-  console.log('Fetching technicians for center:', req.user.center);
+  console.log('Fetching technicians for center:', req.user.atsCenter);
   const technicians = await User.find({
     role: 'TECHNICIAN',
-    atsCenter: req.user.center
+    atsCenter: req.user.atsCenter
+  }).select('-password');
+
+  res.json(technicians);
+});
+
+export const getAllUserAtCenter = asyncHandler(async (req, res) => {
+  console.log('Fetching technicians for center:', req.user.atsCenter);
+  const technicians = await User.find({
+    atsCenter: req.user.atsCenter
   }).select('-password');
 
   res.json(technicians);

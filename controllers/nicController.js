@@ -117,9 +117,11 @@ export const getNICLogStatus = asyncHandler(async (req, res) => {
 });
 export const getAllVehicles= asyncHandler(async(req,res)=>{
          const vehciles=await  NICLog.find();
+     const vehicless=await  NICLog.find().populate('vehicle') 
+
          if(!vehciles){
           res.status(404);
           throw new Error("No vehcles")
          }
-         res.json(vehciles);
+         res.json(vehicless);
 })

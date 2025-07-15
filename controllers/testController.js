@@ -145,3 +145,53 @@ export const markTestAsComplete = asyncHandler(async (req, res) => {
 
   res.json({ message: 'Test marked as completed successfully.' });
 });
+export const submitTest = asyncHandler(async (req, res) => {
+  const bookingId=req.params.id;
+  const { rule, status } = req.body;
+
+  if ( !bookingId) {
+    return res.status(400).json({ message: "rule and bookingId are required" });
+  }
+
+  if (status !== "true" && status !== "false") {
+    return res.status(400).json({ message: "Status must be 'true' or 'false'" });
+  }
+
+  const update = {
+    $set: {
+      [`visualTests.${rule}.isPassed`]: status === "true",
+      [`visualTests.${rule}.remarks`]: status === "true" ? "PASSED" : "FAILED"
+    }
+  };
+
+  const updated = await TestInstance.findOneAndUpdate(
+    { bookingId },
+    update,
+    { new: true }
+  );
+
+  if (!updated) {
+    return res.status(404).json({ message: "TestInstance not found" });
+  }
+
+  res.json({
+    message: `Test ${rule} updated to ${status === "true" ? "PASSED" : "FAILED"}`,
+    visualTest: updated.visualTests[rule]
+  });
+});
+export const getVisualTest = asyncHandler(async (req, res) => {
+  const bookingId = req.params.id;
+
+  if (!bookingId) {
+    return res.status(400).json({ message: "bookingId is required" });
+  }
+
+  // findOne returns a single document
+  const testInstance = await TestInstance.findOne({ bookingId });
+
+  if (!testInstance) {
+    return res.status(404).json({ message: "TestInstance not found" });
+  }
+  const testInstances=testInstance.visualTests
+  res.json(testInstances);
+});

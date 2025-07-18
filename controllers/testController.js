@@ -146,39 +146,37 @@ export const markTestAsComplete = asyncHandler(async (req, res) => {
   res.json({ message: 'Test marked as completed successfully.' });
 });
 export const submitTest = asyncHandler(async (req, res) => {
-  const bookingId=req.params.id;
-  const { rule, status } = req.body;
+  const bookingId = req.params.id
+  const { rule, status, image } = req.body
 
-  if ( !bookingId) {
-    return res.status(400).json({ message: "rule and bookingId are required" });
+  if (!bookingId || !rule) {
+    return res.status(400).json({ message: "rule and bookingId are required" })
   }
 
-  if (status !== "true" && status !== "false") {
-    return res.status(400).json({ message: "Status must be 'true' or 'false'" });
-  }
+  const update = image
+    ? { $set: { [`visualTests.${rule}.Image`]: image } }
+    : {
+        $set: {
+          [`visualTests.${rule}.isPassed`]: status === "true",
+          [`visualTests.${rule}.remarks`]: status === "true" ? "PASSED" : "FAILED",
+          [`visualTests.${rule}.status`]: "COMPLETED"
+        }
+      }
 
-  const update = {
-    $set: {
-      [`visualTests.${rule}.isPassed`]: status === "true",
-      [`visualTests.${rule}.remarks`]: status === "true" ? "PASSED" : "FAILED"
-    }
-  };
-
-  const updated = await TestInstance.findOneAndUpdate(
-    { bookingId },
-    update,
-    { new: true }
-  );
+  const updated = await TestInstance.findOneAndUpdate({ bookingId }, update, { new: true })
 
   if (!updated) {
-    return res.status(404).json({ message: "TestInstance not found" });
+    return res.status(404).json({ message: "TestInstance not found" })
   }
 
   res.json({
-    message: `Test ${rule} updated to ${status === "true" ? "PASSED" : "FAILED"}`,
+    message: image
+      ? `Image uploaded for ${rule}`
+      : `Test ${rule} updated to ${status === "true" ? "PASSED" : "FAILED"}`,
     visualTest: updated.visualTests[rule]
-  });
-});
+  })
+})
+
 export const getVisualTest = asyncHandler(async (req, res) => {
   const bookingId = req.params.id;
 
@@ -194,4 +192,36 @@ export const getVisualTest = asyncHandler(async (req, res) => {
   }
   const testInstances=testInstance.visualTests
   res.json(testInstances);
+});
+
+// @desc Upload visual test image as Base64
+// @route POST /api/tests/:id/upload-image
+// @access Technician/Admin
+
+
+export const uploadVisualImage = asyncHandler(async (req, res) => {
+  const bookingId = req.params.id;
+  const { rule, base64Image } = req.body;
+
+  if (!rule || !base64Image) {
+    return res.status(400).json({ message: "rule and base64Image are required" });
+  }
+
+  const testInstance = await TestInstance.findOne({ bookingId });
+  if (!testInstance) {
+    return res.status(404).json({ message: "TestInstance not found" });
+  }
+
+  // ✅ Save base64 image for the given rule
+  testInstance.visualTests[rule] = {
+    ...testInstance.visualTests[rule],
+    Image: base64Image,
+  };
+
+  await testInstance.save();
+
+  res.json({
+    message: `Image uploaded for ${rule}`,
+    visualTest: testInstance.visualTests[rule],
+  });
 });

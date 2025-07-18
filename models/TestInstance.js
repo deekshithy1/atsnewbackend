@@ -1,5 +1,5 @@
 
-import mongoose from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 // Define the reusable visualTestSchema
 const visualTestSchema = new mongoose.Schema({
@@ -12,6 +12,10 @@ const visualTestSchema = new mongoose.Schema({
   },
 }, { _id: false });
 
+const visualSchema=new mongoose.Schema({
+   Image:String,
+})
+
 // Main TestInstance schema
 const testInstanceSchema = new mongoose.Schema({
   bookingId: { type: String, required: true, unique: true },
@@ -23,7 +27,7 @@ const testInstanceSchema = new mongoose.Schema({
   },
   visualTests: {
     rule189_3i: visualTestSchema,
-    rule189_7_Visual: visualTestSchema,
+    rule189_7_Visual: visualSchema,
     rule189_8a: visualTestSchema,
     rule189_8b: visualTestSchema,
     rule189_9a: visualTestSchema,
@@ -36,12 +40,12 @@ const testInstanceSchema = new mongoose.Schema({
     rule189_11e: visualTestSchema,
     rule189_12a: visualTestSchema,
     rule189_12b: visualTestSchema,
-    rule189_12a_Visual: visualTestSchema,
-    rule189_12b_Visual: visualTestSchema,
+    rule189_12a_Visual: visualSchema,
+    rule189_12b_Visual: visualSchema,
     rule189_13: visualTestSchema,
     rule189_14: visualTestSchema,
     rule189_15: visualTestSchema,
-    rule189_16_Visual: visualTestSchema,
+    rule189_16_Visual: visualSchema,
     rule189_17a: visualTestSchema,
     rule189_17b: visualTestSchema,
     rule189_19: visualTestSchema,
@@ -52,21 +56,21 @@ const testInstanceSchema = new mongoose.Schema({
     rule189_25: visualTestSchema,
     rule189_26: visualTestSchema,
     rule189_27: visualTestSchema,
-    rule189_27_Visual: visualTestSchema,
+    rule189_27_Visual: visualSchema,
     rule189_28: visualTestSchema,
     rule189_29: visualTestSchema,
     rule189_30: visualTestSchema,
-    rule189_31_Visual: visualTestSchema,
+    rule189_31_Visual: visualSchema,
     rule189_32: visualTestSchema,
     rule189_33: visualTestSchema,
     rule189_34: visualTestSchema,
-    rule189_34_Visual: visualTestSchema,
+    rule189_34_Visual: visualSchema,
     rule189_35a: visualTestSchema,
     rule189_35b: visualTestSchema,
     rule189_35c: visualTestSchema,
     rule189_35d: visualTestSchema,
     rule189_36: visualTestSchema,
-    rule189_37_Visual: visualTestSchema,
+    rule189_37_Visual: visualSchema,
     rule189_38: visualTestSchema,
     rule189_39: visualTestSchema,
 
@@ -76,6 +80,10 @@ const testInstanceSchema = new mongoose.Schema({
     imgRight: visualTestSchema,
     imgEngine: visualTestSchema,
     imgChassis: visualTestSchema,
+  },
+  visualTestsCompleted: {
+    type: Boolean,
+    default: false,
   },
   functionalTests: Object,
   status: {
